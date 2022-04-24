@@ -1,26 +1,20 @@
+mod common;
+mod config;
+mod food;
+mod game_setup;
+
 use bevy::core::FixedTimestep;
 use bevy::prelude::*;
-use rand::prelude::random;
-
-const SNAKE_HEAD_COLOR: Color = Color::rgb(0.7, 0.7, 0.7);
-const SNAKE_SEGMENT_COLOR: Color = Color::rgb(0.3, 0.3, 0.3);
-const BACKGROUND_COLOR: Color = Color::rgb(0.04, 0.04, 0.04);
-const FOOD_COLOR: Color = Color::rgb(1.0, 0.0, 1.0);
-const ARENA_WIDTH: u32 = 10;
-const ARENA_HEIGHT: u32 = 10;
+use common::types::{Position, Size};
+use config::*;
+use food::{types::Food, FoodBehavior, GrowthEvent};
+use game_setup::GameSetup;
 
 fn main() {
     App::new()
         // Setup game
-        .insert_resource(WindowDescriptor {
-            title: "Snake!".to_string(),
-            width: 500.0,
-            height: 500.0,
-            ..default()
-        })
-        .add_startup_system(setup_camera)
-        .insert_resource(ClearColor(BACKGROUND_COLOR))
-        .add_plugins(DefaultPlugins)
+        .add_plugin(GameSetup)
+        .add_plugin(FoodBehavior)
         // Setup scaling
         .add_system_set_to_stage(
             CoreStage::PostUpdate,
@@ -36,29 +30,17 @@ fn main() {
         .add_system(snake_movement_input.before(snake_movement))
         .add_system_set(
             SystemSet::new()
-                .with_run_criteria(FixedTimestep::step(1.0))
+                .with_run_criteria(FixedTimestep::step(SNAKE_SPEED))
                 .with_system(snake_movement)
                 .with_system(snake_eating.after(snake_movement))
                 .with_system(snake_growth.after(snake_eating)),
         )
-        // Add food behavior
-        .add_system_set(
-            SystemSet::new()
-                .with_run_criteria(FixedTimestep::step(1.0))
-                .with_system(food_spawner),
-        )
-        .add_event::<GrowthEvent>()
         // Add game over
         .add_event::<GameOverEvent>()
         .add_system(game_over.after(snake_movement))
         .run();
 }
 
-fn setup_camera(mut commands: Commands) {
-    commands.spawn_bundle(OrthographicCameraBundle::new_2d());
-}
-
-struct GrowthEvent;
 struct GameOverEvent;
 
 #[derive(Component)]
@@ -75,15 +57,6 @@ struct SnakeSegments(Vec<Entity>);
 #[derive(Default)]
 struct LastTailPosition(Option<Position>);
 
-#[derive(Component)]
-struct Food;
-
-#[derive(Component, Clone, Copy, PartialEq, Eq)]
-struct Position {
-    x: i32,
-    y: i32,
-}
-
 #[derive(PartialEq, Copy, Clone)]
 enum Direction {
     Left,
@@ -98,20 +71,6 @@ impl Direction {
             Self::Right => Self::Left,
             Self::Up => Self::Down,
             Self::Down => Self::Up,
-        }
-    }
-}
-
-#[derive(Component)]
-struct Size {
-    width: f32,
-    height: f32,
-}
-impl Size {
-    pub fn square(x: f32) -> Self {
-        Self {
-            width: x,
-            height: x,
         }
     }
 }
@@ -234,23 +193,6 @@ fn snake_movement(
                 *positions.get_mut(*segment).unwrap() = *pos;
             });
     }
-}
-
-fn food_spawner(mut commands: Commands) {
-    commands
-        .spawn_bundle(SpriteBundle {
-            sprite: Sprite {
-                color: FOOD_COLOR,
-                ..default()
-            },
-            ..default()
-        })
-        .insert(Food)
-        .insert(Position {
-            x: (random::<f32>() * (ARENA_WIDTH as f32)) as i32,
-            y: (random::<f32>() * (ARENA_HEIGHT as f32)) as i32,
-        })
-        .insert(Size::square(0.8));
 }
 
 fn spawn_segment(mut commands: Commands, position: Position) -> Entity {
