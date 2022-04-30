@@ -1,3 +1,9 @@
+** How to start **
+
+- Install Rust
+- Run `cargo run`
+
+** ToDo **
 [] - add visible walls
 [] - fix game_over that happen when top -> head_post > max_width + 1, similar for east
 [] - fix direction selection. You can't quickly select any direction, f.e. you can't turn around 180d
