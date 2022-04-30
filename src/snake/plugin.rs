@@ -22,11 +22,18 @@ impl Plugin for SnakeBehavior {
                     .with_system(snake_eating.after(snake_movement))
                     .with_system(snake_growth.after(snake_eating)),
             )
-            .add_system(game_over_listener.after(snake_movement));
+            .add_system(game_over_listener.after(snake_movement))
+            // Global Structures
+            .insert_resource(SnakeSegments::default())
+            .insert_resource(LastTailPosition::default());
     }
 }
 
 pub fn spawn_snake(mut commands: Commands, mut segments: ResMut<SnakeSegments>) {
+    let calculate_arena_centre = |arena_size: u32| -> i32 { (arena_size / 2) as i32 };
+    let start_x = calculate_arena_centre(ARENA_WIDTH);
+    let start_y = calculate_arena_centre(ARENA_HEIGHT);
+
     *segments = SnakeSegments(vec![
         commands
             .spawn_bundle(SpriteBundle {
@@ -40,10 +47,19 @@ pub fn spawn_snake(mut commands: Commands, mut segments: ResMut<SnakeSegments>) 
                 direction: Direction::Up,
             })
             .insert(SnakeSegment)
-            .insert(Position { x: 5, y: 5 })
+            .insert(Position {
+                x: start_x,
+                y: start_y,
+            })
             .insert(Size::square(0.8))
             .id(),
-        spawn_segment(commands, Position { x: 5, y: 4 }),
+        spawn_segment(
+            commands,
+            Position {
+                x: start_x,
+                y: start_y - 1,
+            },
+        ),
     ]);
 }
 
@@ -99,8 +115,8 @@ pub fn snake_movement(
         // check collisions with walls
         if head_pos.x < 0
             || head_pos.y < 0
-            || head_pos.x > ARENA_WIDTH as i32
-            || head_pos.y > ARENA_HEIGHT as i32
+            || head_pos.x >= ARENA_WIDTH as i32
+            || head_pos.y >= ARENA_HEIGHT as i32
         {
             game_over_writer.send(GameOverEvent);
         }

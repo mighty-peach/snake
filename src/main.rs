@@ -12,10 +12,7 @@ use game_setup::GameSetup;
 use common::types::{Position, Size};
 use food::FoodBehavior;
 use game_over::GameOverBehavior;
-use snake::{
-    types::{LastTailPosition, SnakeSegments},
-    SnakeBehavior,
-};
+use snake::SnakeBehavior;
 
 fn main() {
     App::new()
@@ -31,9 +28,6 @@ fn main() {
                 .with_system(size_scaling)
                 .with_system(position_translation),
         )
-        // Global Structures
-        .insert_resource(SnakeSegments::default())
-        .insert_resource(LastTailPosition::default())
         .run();
 }
 
